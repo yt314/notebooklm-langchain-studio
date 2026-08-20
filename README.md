@@ -29,6 +29,32 @@ memory across turns. Built as a staged learning project for **LangChain v1** / *
 
 Everything is configurable via env vars — see [`.env.example`](.env.example).
 
+### TED pipeline
+
+The TED graph is available through the checkpointed job API:
+
+```text
+POST /api/ted/jobs                 start a job and receive the approval payload
+POST /api/ted/jobs/{id}/resume     approve or request a revision
+GET  /api/ted/jobs/{id}            read the persisted job state
+POST /api/podcast/jobs             start a podcast job and receive the approval payload
+POST /api/podcast/jobs/{id}/resume approve or request a revision
+GET  /api/podcast/jobs/{id}        read the persisted podcast state
+```
+
+After approval, `synthesize_audio` renders the Hebrew script through the selected
+provider (`elevenlabs` by default, or `cloudrun`). Audio is written to
+`data/ted_audio/{job_id}.mp3`; Cloud Run jobs expose a `.url` sidecar instead.
+The checkpoint and output path make retrying a failed resume idempotent.
+
+The podcast pipeline uses `Send` fan-out for per-segment research and writing,
+then critiques the assembled episode. Its separate `audio_graph.py` asks for
+audio approval before rendering alternating host/guest lines through the shared
+TTS provider.
+
+To open the graph in LangGraph Studio, install the LangGraph CLI and run it from
+the project root; the graph is declared in `langgraph.json` as `ted`.
+
 ## Project structure
 
 ```

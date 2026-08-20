@@ -46,6 +46,10 @@ from api.schemas import (
     SourceDetail,
     SourceInfo,
     WebSearchRequest,
+    TedJobRequest,
+    TedResumeRequest,
+    PodcastJobRequest,
+    PodcastResumeRequest,
 )
 
 app = FastAPI(title="NotebookLM (LangChain learning project)")
@@ -132,6 +136,48 @@ def web_search_sources(req: WebSearchRequest) -> list[SourceInfo]:
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
     return services.run_chat(req)
+
+
+# -- TED jobs -----------------------------------------------------------------
+
+
+@app.post("/api/ted/jobs")
+def start_ted_job(req: TedJobRequest) -> dict:
+    return services.start_ted_job(req.job_id)
+
+
+@app.get("/api/ted/jobs/{job_id}")
+def get_ted_job(job_id: str) -> dict:
+    result = services.get_ted_job(job_id)
+    if result["status"] == "not_found":
+        raise HTTPException(status_code=404, detail="TED job not found.")
+    return result
+
+
+@app.post("/api/ted/jobs/{job_id}/resume")
+def resume_ted_job(job_id: str, req: TedResumeRequest) -> dict:
+    try:
+        return services.resume_ted_job(job_id, req.action, req.feedback)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="TED job not found.") from exc
+
+
+@app.post("/api/podcast/jobs")
+def start_podcast_job(req: PodcastJobRequest) -> dict:
+    return services.start_podcast_job(req.job_id)
+
+
+@app.get("/api/podcast/jobs/{job_id}")
+def get_podcast_job(job_id: str) -> dict:
+    result = services.get_podcast_job(job_id)
+    if result["status"] == "not_found":
+        raise HTTPException(status_code=404, detail="Podcast job not found.")
+    return result
+
+
+@app.post("/api/podcast/jobs/{job_id}/resume")
+def resume_podcast_job(job_id: str, req: PodcastResumeRequest) -> dict:
+    return services.resume_podcast_job(job_id, req.action, req.feedback)
 
 
 # -- studio --------------------------------------------------------------------

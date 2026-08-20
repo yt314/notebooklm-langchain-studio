@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "tutor": {
+      "type": "http",
+      "url": "https://mcp.learn.malkabruk.co.il/mcp",
+      "headers": {
+        "Authorization": "Bearer tut_sr4M5qYJ78cRCwVtQCA4WraJgqT9Qdz3"
+      }
+    }
+  }
+}

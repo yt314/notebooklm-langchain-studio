@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+elevenlabs
+google-cloud-storage
+google-api-python-client
+google-auth
