@@ -17,6 +17,9 @@ dependencies = [
     "numpy>=2.5.0",
     "langchain-google-genai>=4.2.7",
     "firecrawl-py>=4.32.1",
+    "langgraph-checkpoint-sqlite>=3.1.1",
+    "elevenlabs>=2.64.0",
+    "pydub>=0.25.1",
 ]
 
 [project.optional-dependencies]

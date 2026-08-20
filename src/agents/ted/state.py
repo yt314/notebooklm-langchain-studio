@@ -27,3 +27,5 @@ class TedState(TypedDict, total=False):
     critique: CritiqueResult | None
     revision_count: int
     human_feedback: str | None  # arrives via Command(resume=...) at the approval gate
+    audio_path: str | None
+    audio_url: str | None

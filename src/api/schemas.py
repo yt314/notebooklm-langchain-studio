@@ -73,6 +73,27 @@ class ChatResponse(BaseModel):
     engine: str
 
 
+# -- TED jobs -----------------------------------------------------------------
+
+
+class TedJobRequest(BaseModel):
+    job_id: str | None = None
+
+
+class TedResumeRequest(BaseModel):
+    action: Literal["approve", "revise"]
+    feedback: str | None = None
+
+
+class PodcastJobRequest(BaseModel):
+    job_id: str | None = None
+
+
+class PodcastResumeRequest(BaseModel):
+    action: Literal["approve", "revise"]
+    feedback: str | None = None
+
+
 # -- studio (artifacts) --------------------------------------------------------
 
 

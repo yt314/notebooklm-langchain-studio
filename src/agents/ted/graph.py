@@ -13,6 +13,7 @@ from agents.ted.nodes import (
     gather_context,
     plan_talk,
     revise,
+    synthesize_audio,
     write_talk,
 )
 from agents.ted.state import TedState
@@ -27,6 +28,7 @@ def build_ted_graph(checkpointer=None):
     builder.add_node("critique_script", critique_script)
     builder.add_node("revise", revise)
     builder.add_node("approval", approval)
+    builder.add_node("synthesize_audio", synthesize_audio)
 
     builder.add_edge(START, "plan_talk")
     builder.add_edge("plan_talk", "gather_context")
@@ -36,7 +38,10 @@ def build_ted_graph(checkpointer=None):
     builder.add_conditional_edges(
         "critique_script", after_critique, {"approval": "approval", "revise": "revise"}
     )
-    builder.add_conditional_edges("approval", after_approval, {"revise": "revise", "done": END})
+    builder.add_conditional_edges(
+        "approval", after_approval, {"revise": "revise", "synthesize": "synthesize_audio"}
+    )
+    builder.add_edge("synthesize_audio", END)
     builder.add_edge("revise", "count_words")
 
     return builder.compile(checkpointer=checkpointer)

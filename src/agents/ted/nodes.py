@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import re
+from pathlib import Path
 
 from langgraph.types import interrupt
 
@@ -26,6 +28,7 @@ from agents.ted.state import (
     WORD_MIN,
     TedState,
 )
+from agents.ted.tts import get_provider
 
 from core.sources import build_sources_overview, format_docs
 from core.store import store
@@ -202,4 +205,29 @@ def approval(state: TedState) -> dict:
 
 
 def after_approval(state: TedState) -> str:
-    return "revise" if state.get("human_feedback") else "done"
+    return "revise" if state.get("human_feedback") else "synthesize"
+
+
+def synthesize_audio(state: TedState) -> dict:
+    """Render the approved script once; retrying the node is idempotent."""
+    job_id = state["job_id"]
+    audio_dir = Path(os.getenv("TED_AUDIO_DIR", "data/ted_audio"))
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    path = audio_dir / f"{job_id}.mp3"
+    sidecar = path.with_suffix(".url")
+
+    if path.exists() or sidecar.exists():
+        result = {"audio_path": str(path)}
+        if sidecar.exists():
+            result["audio_url"] = sidecar.read_text(encoding="utf-8").strip()
+        return result
+
+    voice_id = os.environ.get("TED_VOICE_ID")
+    if not voice_id:
+        raise RuntimeError("TED_VOICE_ID is required to synthesize audio.")
+
+    output = get_provider().synthesize_dialogue([(state["script_he"], voice_id)], path)
+    result = {"audio_path": str(output)}
+    if sidecar.exists():
+        result["audio_url"] = sidecar.read_text(encoding="utf-8").strip()
+    return result

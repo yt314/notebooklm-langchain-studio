@@ -19,6 +19,8 @@ from api.schemas import (
     SourceInfo,
 )
 from agents import chat, research
+from agents.ted import ted_jobs
+from agents import podcast
 from core.store import store
 
 
@@ -92,6 +94,57 @@ def run_chat(req: ChatRequest) -> ChatResponse:
     result = chat.answer(req.message, thread_id=req.thread_id or "default")
     citations = [Citation(source=name) for name in result.sources]
     return ChatResponse(answer=result.text, citations=citations, engine="chat")
+
+
+# -- TED jobs -----------------------------------------------------------------
+
+
+def start_ted_job(job_id: str | None) -> dict:
+    return ted_jobs.start(job_id or uuid.uuid4().hex)
+
+
+def resume_ted_job(job_id: str, action: str, feedback: str | None) -> dict:
+    return ted_jobs.resume(job_id, action, feedback)
+
+
+def get_ted_job(job_id: str) -> dict:
+    return ted_jobs.status(job_id)
+
+
+def start_podcast_job(job_id: str | None) -> dict:
+    actual_id = job_id or uuid.uuid4().hex
+    return {"status": "awaiting_approval", "job_id": actual_id, "approval": podcast.run_start(actual_id)}
+
+
+def resume_podcast_job(job_id: str, action: str, feedback: str | None) -> dict:
+    audio_values = podcast.get_audio_values(job_id)
+    if audio_values.get("lines"):
+        result = podcast.resume_audio(job_id, {"action": action, "feedback": feedback})
+        if "__interrupt__" in result:
+            return {"status": "awaiting_audio_approval", "job_id": job_id, "approval": result["__interrupt__"][0].value}
+        return get_podcast_job(job_id)
+    result = podcast.run_resume(job_id, {"action": action, "feedback": feedback})
+    if "__interrupt__" in result:
+        return {"status": "awaiting_approval", "job_id": job_id, "approval": result["__interrupt__"][0].value}
+    script_values = podcast.get_values(job_id)
+    approval = podcast.start_audio(job_id, script_values["episode_text"])
+    return {"status": "awaiting_audio_approval", "job_id": job_id, "approval": approval}
+
+
+def get_podcast_job(job_id: str) -> dict:
+    values = podcast.get_values(job_id)
+    if not values:
+        return {"status": "not_found", "job_id": job_id}
+    audio_values = podcast.get_audio_values(job_id)
+    if audio_values.get("audio_path") or audio_values.get("audio_url"):
+        state = "completed"
+    elif audio_values.get("lines"):
+        state = "awaiting_audio_approval"
+    elif values.get("episode_text"):
+        state = "awaiting_audio_approval"
+    else:
+        state = "running"
+    return {"status": state, "job_id": job_id, **values, **audio_values}
 
 
 # -- studio (artifacts) --------------------------------------------------------

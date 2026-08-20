@@ -220,26 +220,47 @@ async function sendMessage(message) {
 /* ---- studio + notes -------------------------------------------------------- */
 
 async function loadArtifacts() {
-  const arts = await api.get("/api/studio/artifacts");
   const grid = $("artifacts");
   grid.innerHTML = "";
+  const arts = [
+    { key: "ted", title: "TED talk", icon: "🎤" },
+    { key: "podcast", title: "Podcast", icon: "🎙" },
+  ];
   for (const a of arts) {
     const btn = document.createElement("button");
     btn.className = "artifact";
-    const badge = a.status === "planned" ? `<span class="a-badge">Soon</span>` : "";
     btn.innerHTML = `<span class="a-icon">${a.icon}</span>
-      <span class="a-title">${escapeHtml(a.title)}</span>${badge}`;
-    btn.onclick = () => generateArtifact(a);
+      <span class="a-title">${escapeHtml(a.title)}</span>
+      <span class="a-badge">Create</span>`;
+    btn.onclick = () => startStudioJob(a.key);
     grid.appendChild(btn);
   }
 }
 
-async function generateArtifact(a) {
+async function startStudioJob(kind) {
   try {
-    await api.send("POST", "/api/studio/generate", { kind: a.key });
+    const base = kind === "ted" ? "/api/ted/jobs" : "/api/podcast/jobs";
+    const result = await api.send("POST", base, {});
+    await handleApproval(kind, result);
   } catch (e) {
     addMessage("system", `⚠ ${e.message}`);
   }
+}
+
+async function handleApproval(kind, result) {
+  const approval = result.approval || {};
+  const text = approval.script_he || approval.episode_text || "No draft returned.";
+  openViewer(kind === "ted" ? "TED draft" : "Podcast draft", text);
+  const approved = window.confirm("Approve this draft for audio synthesis?");
+  const feedback = approved ? null : window.prompt("What should be revised?", "Please improve the draft.");
+  if (!approved && !feedback) return;
+  const base = kind === "ted" ? "/api/ted/jobs" : "/api/podcast/jobs";
+  const next = await api.send("POST", `${base}/${result.job_id}/resume`, {
+    action: approved ? "approve" : "revise",
+    feedback,
+  });
+  if (next.approval) await handleApproval(kind, next);
+  else addMessage("system", `${kind} is ready for audio synthesis.`);
 }
 
 async function loadNotes() {
