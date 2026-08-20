@@ -13,12 +13,12 @@
 - [ ] 0.5 מיפוי הארכיטקטורה — מסע של בקשת צ'אט
 - [ ] 0.6 מושגי הבסיס: chunking, embeddings וחיפוש סמנטי
 
-## מודול 1 — הרצאת TED: צינור התסריט ולולאת האיכות   [ ]   (ענף: feature/ted-script)
-- [ ] 1.1 התוכנית לפני הקוד
-- [ ] 1.2 הסכמות (TalkBrief, CritiqueResult)
-- [ ] 1.3 מודלים ופרומפטים (models.py, prompts.py)
-- [ ] 1.4 ה-state וקבועי האורך (state.py)
-- [ ] 1.5 node ראשון והרצה ראשונה (plan_talk) 🧠+⚙️
+## מודול 1 — הרצאת TED: צינור התסריט ולולאת האיכות   [~]   (ענף: feature/ted-script)
+- [x] 1.1 התוכנית לפני הקוד
+- [x] 1.2 הסכמות (TalkBrief, CritiqueResult)
+- [x] 1.3 מודלים ופרומפטים (models.py, prompts.py)
+- [x] 1.4 ה-state וקבועי האורך (state.py)
+- [x] 1.5 node ראשון והרצה ראשונה (plan_talk) 🧠+⚙️
 - [ ] 1.6 מחקר בלי LLM וכתיבה חופשית (gather_context, write_talk)
 - [ ] 1.7 אכיפה בקוד (count_words)
 - [ ] 1.8 לולאת writer→critic (critique_script, revise)

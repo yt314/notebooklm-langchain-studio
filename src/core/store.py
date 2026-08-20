@@ -10,6 +10,7 @@ from langchain_cohere import CohereEmbeddings
 from langchain_core.documents import Document
 from langchain_core.vectorstores import InMemoryVectorStore
 
+from agents.summarize import summarize
 from core.sources import chunk_source
 
 EMBEDDING_MODEL = os.getenv("NOTEBOOKLM_EMBEDDING_MODEL", "embed-multilingual-v3.0")
@@ -21,6 +22,7 @@ class Source:
     name: str
     content: str
     active: bool = True
+    summary: str | None = None
 
 
 class SourceStore:
@@ -32,7 +34,9 @@ class SourceStore:
         self._chunk_ids: dict[str, list[str]] = {}
 
     def add(self, name: str, content: str) -> Source:
-        source = Source(id=uuid.uuid4().hex[:8], name=name, content=content)
+        source = Source(
+            id=uuid.uuid4().hex[:8], name=name, content=content, summary=summarize(name, content)
+        )
         self.sources[source.id] = source
         docs = chunk_source(source.id, source.name, source.content)
         if docs:
