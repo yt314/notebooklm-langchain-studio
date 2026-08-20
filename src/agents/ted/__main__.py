@@ -23,3 +23,6 @@ for arg in sys.argv[1:]:
 result = build_ted_graph().invoke({"job_id": "test"})
 
 print(json.dumps(result["brief"].model_dump(), indent=2, ensure_ascii=False))
+print("--- script ---")
+print(result["script_he"])
+print(f"\n({len(result['script_he'].split())} מילים)")

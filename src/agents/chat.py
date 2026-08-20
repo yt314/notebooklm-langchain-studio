@@ -21,7 +21,7 @@ class Answer:
     sources: list[str] = field(default_factory=list)
 
 
-MODEL = os.getenv("NOTEBOOKLM_CHAT_MODEL", "google_genai:gemini-flash-latest")
+MODEL = os.getenv("NOTEBOOKLM_CHAT_MODEL", "google_genai:gemini-2.5-flash")
 
 SYSTEM_PROMPT = """You are the assistant for a notebook of source documents.
 

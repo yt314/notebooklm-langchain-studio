@@ -6,7 +6,7 @@ import os
 
 from langchain.chat_models import init_chat_model
 
-MODEL = os.getenv("NOTEBOOKLM_SUMMARY_MODEL", "google_genai:gemini-flash-latest")
+MODEL = os.getenv("NOTEBOOKLM_SUMMARY_MODEL", "google_genai:gemini-2.5-flash")
 
 SUMMARY_PROMPT = (
     "Summarize the following source in 5-10 concise sentences, in the same "

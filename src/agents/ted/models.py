@@ -7,9 +7,9 @@ from functools import lru_cache
 from langchain.chat_models import init_chat_model
 
 MODELS = {
-    "planning": "google_genai:gemini-flash-latest",  # plan_talk
-    "writing": "google_genai:gemini-flash-latest",  # write_talk, revise
-    "critique": "google_genai:gemini-flash-latest",  # critique_script
+    "planning": "google_genai:gemini-2.5-flash",  # plan_talk
+    "writing": "google_genai:gemini-2.5-flash",  # write_talk, revise
+    "critique": "google_genai:gemini-2.5-flash",  # critique_script
 }
 
 

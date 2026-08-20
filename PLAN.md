@@ -19,7 +19,7 @@
 - [x] 1.3 מודלים ופרומפטים (models.py, prompts.py)
 - [x] 1.4 ה-state וקבועי האורך (state.py)
 - [x] 1.5 node ראשון והרצה ראשונה (plan_talk) 🧠+⚙️
-- [ ] 1.6 מחקר בלי LLM וכתיבה חופשית (gather_context, write_talk)
+- [x] 1.6 מחקר בלי LLM וכתיבה חופשית (gather_context, write_talk)
 - [ ] 1.7 אכיפה בקוד (count_words)
 - [ ] 1.8 לולאת writer→critic (critique_script, revise)
 - [ ] 1.9 LangSmith — תצפית על הגרף
