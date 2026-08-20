@@ -24,8 +24,8 @@
 - [x] 1.8 לולאת writer→critic (critique_script, revise)
 - [x] 1.9 LangSmith — תצפית על הגרף
 
-## מודול 2 — הרצאת TED: אישור אנושי, עמידות וקול   [ ]   (ענף: feature/ted-approval)
-- [ ] 2.1 interrupt() ואישור אנושי
+## מודול 2 — הרצאת TED: אישור אנושי, עמידות וקול   [~]   (ענף: feature/ted-approval)
+- [x] 2.1 interrupt() ואישור אנושי
 - [ ] 2.2 checkpointing (SqliteSaver)
 - [ ] 2.3 שכבת TTS (Protocol וספק ElevenLabs)
 - [ ] 2.4 מסלול נטפרי: שירות TTS ב-Cloud Run עם מסירה לדרייב (רשות)

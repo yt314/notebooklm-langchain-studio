@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from langgraph.types import interrupt
+
 from agents.ted.models import get_model
 from agents.ted.prompts import (
     CRITIQUE_SYSTEM,
@@ -164,7 +166,7 @@ def revise(state: TedState) -> dict:
                     script=state["script_he"],
                     word_count=state["word_count"],
                     issues=issues,
-                    human_feedback="אין",
+                    human_feedback=state.get("human_feedback") or "אין",
                     context=state["context"],
                 ),
             },
@@ -173,4 +175,31 @@ def revise(state: TedState) -> dict:
     return {
         "script_he": response.text.strip(),
         "revision_count": state["revision_count"] + 1,
+        "human_feedback": None,
     }
+
+
+def approval(state: TedState) -> dict:
+    """The human-in-the-loop gate. interrupt() pauses the graph here and the
+    checkpointer persists it; the payload below is what the caller shows the
+    user. Command(resume={"action": ...}) re-enters this node with the user's
+    decision as interrupt()'s return value."""
+
+    # never put side effects before interrupt
+    decision = interrupt(
+        {
+            "topic": state["brief"].topic,
+            "script_he": state["script_he"],
+            "word_count": state["word_count"],
+            "revision_count": state["revision_count"],
+            "critique_notes": state["critique"].issues if state.get("critique") else [],
+        }
+    )
+
+    if decision.get("action") == "revise":
+        return {"human_feedback": decision.get("feedback") or "המשתמש/ת ביקש/ה גרסה משופרת."}
+    return {"human_feedback": None}
+
+
+def after_approval(state: TedState) -> str:
+    return "revise" if state.get("human_feedback") else "done"

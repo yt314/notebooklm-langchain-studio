@@ -4,13 +4,15 @@ from netfree_unstrict_ssl import unstrict_ssl
 
 unstrict_ssl()
 
-import json
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
 
 from agents.ted.graph import build_ted_graph
 from core.store import store
@@ -20,30 +22,27 @@ for arg in sys.argv[1:]:
     store.add(name=path.name, content=path.read_text(encoding="utf-8"))
     print(f"loaded source: {path.name}")
 
-graph = build_ted_graph()
-final_state = None
-config = {
-    "recursion_limit": 25,
-    "run_name": "ted-talk",
-    "metadata": {"job_id": "test"},
-}
-for mode, chunk in graph.stream(
-    {"job_id": "test"},
-    config=config,
-    stream_mode=["updates", "values"],
-):
-    if mode == "updates":
-        for node in chunk:
-            print(f">>> {node} done")
-    else:
-        final_state = chunk
-result = final_state
+graph = build_ted_graph(checkpointer=InMemorySaver())
+config = {"configurable": {"thread_id": "test"}, "recursion_limit": 25}
 
-print(json.dumps(result["brief"].model_dump(), indent=2, ensure_ascii=False))
-print("--- script ---")
-print(result["script_he"])
-print(f"\nword_count (מהקוד): {result['word_count']}")
-if result.get("critique"):
-    print("critique passed:", result["critique"].passed)
-    print("issues:", result["critique"].issues)
+result = graph.invoke({"job_id": "test"}, config)
+
+while result.get("__interrupt__"):
+    payload = result["__interrupt__"][0].value
+    print("--- script ---")
+    print(payload["script_he"])
+    print(f"\n({payload['word_count']} מילים, {payload['revision_count']} תיקונים)")
+    if payload["critique_notes"]:
+        print("הערות המבקר:", payload["critique_notes"])
+
+    answer = input("לאשר? (y = אישור / כל טקסט אחר = משוב לשינוי): ").strip()
+    if answer.lower() == "y":
+        resume = {"action": "approve"}
+    else:
+        resume = {"action": "revise", "feedback": answer}
+
+    result = graph.invoke(Command(resume=resume), config)
+
+print("ההרצאה אושרה — הגרף הסתיים.")
+print(f"word_count (מהקוד): {result['word_count']}")
 print("revisions:", result["revision_count"])

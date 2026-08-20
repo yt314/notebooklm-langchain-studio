@@ -26,3 +26,4 @@ class TedState(TypedDict, total=False):
     word_count: int
     critique: CritiqueResult | None
     revision_count: int
+    human_feedback: str | None  # arrives via Command(resume=...) at the approval gate
