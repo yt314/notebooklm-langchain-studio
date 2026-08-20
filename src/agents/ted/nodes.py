@@ -2,15 +2,28 @@
 
 from __future__ import annotations
 
+import re
+
 from agents.ted.models import get_model
 from agents.ted.prompts import (
+    CRITIQUE_SYSTEM,
+    CRITIQUE_USER,
     PLAN_TALK_SYSTEM,
     PLAN_TALK_USER,
+    REVISE_SYSTEM,
+    REVISE_USER,
     WRITE_TALK_SYSTEM,
     WRITE_TALK_USER,
 )
-from agents.ted.schemas import TalkBrief
-from agents.ted.state import TARGET_WORDS, WORD_MAX, WORD_MIN, TedState
+from agents.ted.schemas import CritiqueResult, TalkBrief
+from agents.ted.state import (
+    HARD_CAP,
+    MAX_REVISIONS,
+    TARGET_WORDS,
+    WORD_MAX,
+    WORD_MIN,
+    TedState,
+)
 
 from core.sources import build_sources_overview, format_docs
 from core.store import store
@@ -69,3 +82,95 @@ def write_talk(state: TedState) -> dict:
         ]
     )
     return {"script_he": response.text.strip()}
+
+
+def _sentences(text: str) -> list[str]:
+    return re.split(r"(?<=[.!?])\s+", text.strip())
+
+
+def count_words(state: TedState) -> dict:
+    """Pure code: count the script's words; hard-trim at a sentence boundary
+    if the model overshot HARD_CAP. The prompt asks for the budget - this node
+    enforces it."""
+    script = state["script_he"]
+    if len(script.split()) <= HARD_CAP:
+        return {"word_count": len(script.split())}
+
+    kept, used = [], 0
+    for sentence in _sentences(script):
+        n = len(sentence.split())
+        if kept and used + n > HARD_CAP:
+            break
+        kept.append(sentence)
+        used += n
+    trimmed = " ".join(kept)
+    return {"script_he": trimmed, "word_count": len(trimmed.split())}
+
+
+def critique_script(state: TedState) -> dict:
+    """LLM judge: passed/issues. It receives the word count computed in code -
+    it does not count by itself."""
+    brief = state["brief"]
+    llm = get_model("critique").with_structured_output(CritiqueResult)
+    result = llm.invoke(
+        [
+            {
+                "role": "system",
+                "content": CRITIQUE_SYSTEM.format(word_min=WORD_MIN, word_max=WORD_MAX),
+            },
+            {
+                "role": "user",
+                "content": CRITIQUE_USER.format(
+                    topic=brief.topic,
+                    hook=brief.hook,
+                    key_points="\n".join(f"- {p}" for p in brief.key_points),
+                    word_count=state["word_count"],
+                    script=state["script_he"],
+                ),
+            },
+        ]
+    )
+    return {"critique": result}
+
+
+def after_critique(state: TedState) -> str:
+    """passed, or out of revision budget -> done. Otherwise revise."""
+    if state["critique"].passed or state["revision_count"] >= MAX_REVISIONS:
+        return "approval"
+    return "revise"
+
+
+def revise(state: TedState) -> dict:
+    """LLM: rewrite the script per the critique issues."""
+    critique = state.get("critique")
+    issues = (
+        "\n".join(f"- {issue}" for issue in critique.issues)
+        if critique and critique.issues
+        else "אין"
+    )
+
+    llm = get_model("writing")
+    response = llm.invoke(
+        [
+            {
+                "role": "system",
+                "content": REVISE_SYSTEM.format(
+                    target_words=TARGET_WORDS, word_min=WORD_MIN, word_max=WORD_MAX
+                ),
+            },
+            {
+                "role": "user",
+                "content": REVISE_USER.format(
+                    script=state["script_he"],
+                    word_count=state["word_count"],
+                    issues=issues,
+                    human_feedback="אין",
+                    context=state["context"],
+                ),
+            },
+        ]
+    )
+    return {
+        "script_he": response.text.strip(),
+        "revision_count": state["revision_count"] + 1,
+    }

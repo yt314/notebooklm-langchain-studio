@@ -20,9 +20,30 @@ for arg in sys.argv[1:]:
     store.add(name=path.name, content=path.read_text(encoding="utf-8"))
     print(f"loaded source: {path.name}")
 
-result = build_ted_graph().invoke({"job_id": "test"})
+graph = build_ted_graph()
+final_state = None
+config = {
+    "recursion_limit": 25,
+    "run_name": "ted-talk",
+    "metadata": {"job_id": "test"},
+}
+for mode, chunk in graph.stream(
+    {"job_id": "test"},
+    config=config,
+    stream_mode=["updates", "values"],
+):
+    if mode == "updates":
+        for node in chunk:
+            print(f">>> {node} done")
+    else:
+        final_state = chunk
+result = final_state
 
 print(json.dumps(result["brief"].model_dump(), indent=2, ensure_ascii=False))
 print("--- script ---")
 print(result["script_he"])
-print(f"\n({len(result['script_he'].split())} מילים)")
+print(f"\nword_count (מהקוד): {result['word_count']}")
+if result.get("critique"):
+    print("critique passed:", result["critique"].passed)
+    print("issues:", result["critique"].issues)
+print("revisions:", result["revision_count"])
