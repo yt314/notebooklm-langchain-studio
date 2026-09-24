@@ -7,14 +7,13 @@ from functools import lru_cache
 
 from langgraph.types import Command
 
-from agents.ted.checkpoint import get_saver
-from agents.podcast.graph import build_podcast_graph
-from agents.podcast.audio_graph import build_audio_graph
-
 
 @lru_cache
 def _graph():
-	return build_podcast_graph(checkpointer=get_saver())
+    from agents.podcast.graph import build_podcast_graph
+    from agents.ted.checkpoint import get_saver
+
+    return build_podcast_graph(checkpointer=get_saver())
 
 
 def _config(job_id: str) -> dict:
@@ -36,7 +35,10 @@ def get_values(job_id: str) -> dict:
 
 @lru_cache
 def _audio_graph():
-	return build_audio_graph(checkpointer=get_saver())
+    from agents.podcast.audio_graph import build_audio_graph
+    from agents.ted.checkpoint import get_saver
+
+    return build_audio_graph(checkpointer=get_saver())
 
 
 def _audio_config(job_id: str) -> dict:

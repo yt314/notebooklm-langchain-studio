@@ -6,12 +6,12 @@ from functools import lru_cache
 
 from langgraph.types import Command
 
-from agents.ted.checkpoint import get_saver
-from agents.ted.graph import build_ted_graph
-
 
 @lru_cache
 def _graph():
+    from agents.ted.checkpoint import get_saver
+    from agents.ted.graph import build_ted_graph
+
     # Compiled once per process; every talk is a separate checkpointed thread.
     return build_ted_graph(checkpointer=get_saver())
 

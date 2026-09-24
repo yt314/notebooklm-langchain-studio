@@ -30,8 +30,25 @@ class SourceStore:
 
     def __init__(self) -> None:
         self.sources: dict[str, Source] = {}
-        self.vector_store = InMemoryVectorStore(CohereEmbeddings(model=EMBEDDING_MODEL))
+        self.vector_store = self._build_vector_store()
         self._chunk_ids: dict[str, list[str]] = {}
+
+    @staticmethod
+    def _build_vector_store():
+        api_key = os.getenv("COHERE_API_KEY")
+        if not api_key:
+            return None
+        try:
+            return InMemoryVectorStore(CohereEmbeddings(model=EMBEDDING_MODEL))
+        except Exception:
+            return None
+
+    def _require_vector_store(self):
+        if self.vector_store is None:
+            raise RuntimeError(
+                "Semantic search is unavailable because COHERE_API_KEY is not configured. "
+                "Set the environment variable before indexing or querying sources."
+            )
 
     def add(self, name: str, content: str) -> Source:
         source = Source(
@@ -40,6 +57,7 @@ class SourceStore:
         self.sources[source.id] = source
         docs = chunk_source(source.id, source.name, source.content)
         if docs:
+            self._require_vector_store()
             self._chunk_ids[source.id] = self.vector_store.add_documents(docs)
         return source
 
@@ -49,6 +67,7 @@ class SourceStore:
         del self.sources[source_id]
         chunk_ids = self._chunk_ids.pop(source_id, None)
         if chunk_ids:
+            self._require_vector_store()
             self.vector_store.delete(chunk_ids)
         return True
 
@@ -72,6 +91,7 @@ class SourceStore:
         active_ids = self.active_ids()
         if not active_ids:
             return []
+        self._require_vector_store()
         return self.vector_store.similarity_search(
             query, k=k, filter=lambda doc: doc.metadata.get("source_id") in active_ids
         )
